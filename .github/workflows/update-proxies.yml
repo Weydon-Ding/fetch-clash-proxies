@@ -23,17 +23,15 @@ jobs:
           python-version: "3.x"
 
       - name: Generate Clash config
-        run: python fetch_clash_proxies.py -o clash-free-proxies.yaml
-
-      - name: Commit and push changes
         run: |
-          if git diff --quiet -- clash-free-proxies.yaml; then
-            echo "No changes in clash-free-proxies.yaml."
-            exit 0
-          fi
+          mkdir -p publish
+          python fetch_clash_proxies.py -o publish/clash-free-proxies.yaml
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add clash-free-proxies.yaml
-          git commit -m "Update Clash proxy list"
-          git push origin HEAD:main
+      - name: Publish latest release asset
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: Latest Clash Subscription
+          artifacts: publish/clash-free-proxies.yaml
+          allowUpdates: true
+          replacesArtifacts: true

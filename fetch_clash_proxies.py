@@ -21,6 +21,34 @@ from pathlib import Path
 DEFAULT_URL = "https://socks5-proxy.github.io/"
 DEFAULT_OUTPUT = "clash-free-proxies.yaml"
 TEST_URL = "https://www.gstatic.com/generate_204"
+RULE_PROVIDER_BASE_URL = "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release"
+RULE_PROVIDERS = [
+    ("reject", "domain", "reject.txt"),
+    ("icloud", "domain", "icloud.txt"),
+    ("apple", "domain", "apple.txt"),
+    ("google", "domain", "google.txt"),
+    ("proxy", "domain", "proxy.txt"),
+    ("direct", "domain", "direct.txt"),
+    ("private", "domain", "private.txt"),
+    ("telegramcidr", "ipcidr", "telegramcidr.txt"),
+    ("cncidr", "ipcidr", "cncidr.txt"),
+    ("lancidr", "ipcidr", "lancidr.txt"),
+]
+PROXY_FIRST_RULES = [
+    "RULE-SET,private,DIRECT",
+    "RULE-SET,lancidr,DIRECT",
+    "RULE-SET,reject,REJECT",
+    "RULE-SET,icloud,DIRECT",
+    "RULE-SET,apple,DIRECT",
+    "RULE-SET,google,PROXY",
+    "RULE-SET,proxy,PROXY",
+    "RULE-SET,telegramcidr,PROXY",
+    "RULE-SET,direct,DIRECT",
+    "RULE-SET,cncidr,DIRECT",
+    "GEOIP,LAN,DIRECT",
+    "GEOIP,CN,DIRECT",
+    "MATCH,PROXY",
+]
 
 
 def format_generated_time(now=None):
@@ -169,6 +197,28 @@ def indent_proxy_names(names, spaces=6):
     return "\n".join(f'{pad}- "{name}"' for name in names)
 
 
+def render_rule_providers():
+    lines = ["rule-providers:"]
+    for index, (name, behavior, filename) in enumerate(RULE_PROVIDERS):
+        if index:
+            lines.append("")
+        lines.extend(
+            [
+                f"  {name}:",
+                "    type: http",
+                f"    behavior: {behavior}",
+                f"    url: \"{RULE_PROVIDER_BASE_URL}/{filename}\"",
+                f"    path: ./ruleset/{name}.yaml",
+                "    interval: 86400",
+            ]
+        )
+    return lines
+
+
+def render_rules():
+    return ["rules:", *[f"  - {rule}" for rule in PROXY_FIRST_RULES]]
+
+
 def render_config(proxies, source_url):
     named = [(proxy_name(p, i + 1), p) for i, p in enumerate(proxies)]
     all_names = [name for name, _ in named]
@@ -257,13 +307,11 @@ def render_config(proxies, source_url):
             indent_proxy_names(names),
         ])
 
-    lines.extend([
-        "",
-        "rules:",
-        "  - GEOIP,CN,DIRECT",
-        "  - MATCH,PROXY",
-        "",
-    ])
+    lines.append("")
+    lines.extend(render_rule_providers())
+    lines.append("")
+    lines.extend(render_rules())
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -280,6 +328,7 @@ def main():
             raise RuntimeError("没有解析到可用代理，可能是页面结构变化或网络异常")
         config = render_config(proxies, args.url)
         out = Path(args.output)
+        out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(config, encoding="utf-8")
         print(f"已生成：{out.resolve()}")
         print(f"共写入 {len(proxies)} 个代理。")

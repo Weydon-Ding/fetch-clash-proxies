@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+
+# Local generated Clash subscription output.
+clash-free-proxies.yaml
+publish/
