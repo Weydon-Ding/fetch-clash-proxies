@@ -179,7 +179,6 @@ def render_config(proxies, source_url):
     lines = []
     lines.append(f"# 由 fetch_clash_proxies.py 自动生成")
     lines.append(f"# 来源：{source_url}")
-    lines.append(f"# 生成时间：{format_generated_time()}")
     lines.append("")
     lines.extend([
         "port: 7890",

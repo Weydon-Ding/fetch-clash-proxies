@@ -1,6 +1,5 @@
 # 由 fetch_clash_proxies.py 自动生成
 # 来源：https://socks5-proxy.github.io/
-# 生成时间：2026-06-29 04:42:24 UTC
 
 port: 7890
 socks-port: 7891
