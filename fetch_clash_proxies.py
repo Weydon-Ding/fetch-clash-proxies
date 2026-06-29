@@ -20,6 +20,7 @@ from pathlib import Path
 
 DEFAULT_URL = "https://socks5-proxy.github.io/"
 DEFAULT_OUTPUT = "clash-free-proxies.yaml"
+DEFAULT_STRICT_OUTPUT = "clash-free-proxies-strict.yaml"
 TEST_URL = "https://www.gstatic.com/generate_204"
 RULE_PROVIDER_BASE_URL = "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release"
 RULE_PROVIDERS = [
@@ -49,6 +50,7 @@ PROXY_FIRST_RULES = [
     "GEOIP,CN,DIRECT",
     "MATCH,PROXY",
 ]
+STRICT_RULES = [*PROXY_FIRST_RULES[:-1], "MATCH,DIRECT"]
 
 
 def format_generated_time(now=None):
@@ -215,11 +217,18 @@ def render_rule_providers():
     return lines
 
 
-def render_rules():
-    return ["rules:", *[f"  - {rule}" for rule in PROXY_FIRST_RULES]]
+def render_rules(rules):
+    return ["rules:", *[f"  - {rule}" for rule in rules]]
 
 
-def render_config(proxies, source_url):
+def strict_output_path(output):
+    path = Path(output)
+    if path.name == DEFAULT_OUTPUT:
+        return path.with_name(DEFAULT_STRICT_OUTPUT)
+    return path.with_name(f"{path.stem}-strict{path.suffix}")
+
+
+def render_config(proxies, source_url, rules=PROXY_FIRST_RULES):
     named = [(proxy_name(p, i + 1), p) for i, p in enumerate(proxies)]
     all_names = [name for name, _ in named]
     socks_names = [name for name, p in named if p["protocol"] == "socks5"]
@@ -310,7 +319,7 @@ def render_config(proxies, source_url):
     lines.append("")
     lines.extend(render_rule_providers())
     lines.append("")
-    lines.extend(render_rules())
+    lines.extend(render_rules(rules))
     lines.append("")
     return "\n".join(lines)
 
@@ -319,6 +328,10 @@ def main():
     argp = argparse.ArgumentParser(description="抓取免费代理并生成 Clash 配置")
     argp.add_argument("--url", default=DEFAULT_URL, help="代理列表页面 URL")
     argp.add_argument("-o", "--output", default=DEFAULT_OUTPUT, help="输出 Clash YAML 文件路径")
+    argp.add_argument(
+        "--strict-output",
+        help="严格规则版 Clash YAML 文件路径，默认在输出文件名后追加 -strict",
+    )
     args = argp.parse_args()
 
     try:
@@ -327,10 +340,15 @@ def main():
         if not proxies:
             raise RuntimeError("没有解析到可用代理，可能是页面结构变化或网络异常")
         config = render_config(proxies, args.url)
+        strict_config = render_config(proxies, args.url, STRICT_RULES)
         out = Path(args.output)
+        strict_out = Path(args.strict_output) if args.strict_output else strict_output_path(out)
         out.parent.mkdir(parents=True, exist_ok=True)
+        strict_out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(config, encoding="utf-8")
+        strict_out.write_text(strict_config, encoding="utf-8")
         print(f"已生成：{out.resolve()}")
+        print(f"已生成严格规则版：{strict_out.resolve()}")
         print(f"共写入 {len(proxies)} 个代理。")
     except Exception as exc:
         print(f"生成失败：{exc}", file=sys.stderr)

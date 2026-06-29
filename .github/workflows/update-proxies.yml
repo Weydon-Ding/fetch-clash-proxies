@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Generate Clash config
+      - name: Generate Clash configs
         run: |
           mkdir -p publish
           python fetch_clash_proxies.py -o publish/clash-free-proxies.yaml
@@ -32,6 +32,6 @@ jobs:
         with:
           tag: latest
           name: Latest Clash Subscription
-          artifacts: publish/clash-free-proxies.yaml
+          artifacts: publish/clash-free-proxies.yaml,publish/clash-free-proxies-strict.yaml
           allowUpdates: true
           replacesArtifacts: true
