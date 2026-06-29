@@ -27,6 +27,11 @@ jobs:
           mkdir -p publish
           python fetch_clash_proxies.py -o publish/clash-free-proxies.yaml
 
+      - name: Move latest tag to current commit
+        run: |
+          git tag -f latest "$GITHUB_SHA"
+          git push origin refs/tags/latest --force
+
       - name: Publish latest release asset
         uses: ncipollo/release-action@v1
         with:
