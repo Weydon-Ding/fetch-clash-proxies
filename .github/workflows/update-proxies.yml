@@ -1,6 +1,9 @@
 name: Update Clash Proxies
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # 20:00 UTC = 04:00 Beijing time on the next day.
     - cron: "0 20 * * *"
